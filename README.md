@@ -1,6 +1,6 @@
-# Payday Planner
+# Amazon Payday Planner
 
-> Rank what you want to buy and see what your next payday can afford.
+> *Not affiliated with or endorsed by Amazon.* Rank what you want to buy and see what your next payday can afford.
 
 **Status:** 🚧 Work in progress. This README describes what the project is meant to do; the checklist below shows what already works.
 
@@ -10,7 +10,7 @@
      What problem do you have today? How do you handle "I'll buy it as soon as I get paid" right now?
      Example angle: a notes app / spreadsheet that gets messy, impulse buys, forgetting what you wanted. -->
 
-I keep a mental list of things I plan to buy "as soon as I get paid". Payday Planner turns that list into something I can rank, budget against and actually follow.
+I keep a mental list of things I plan to buy "as soon as I get paid". Amazon Payday Planner turns that list into something I can rank, budget against and actually follow.
 
 ## What it does
 
@@ -42,8 +42,8 @@ Items are taken in priority order (ties broken by the date they were added). Eac
 > Not runnable yet. These are the intended steps once phase 1 is done.
 
 ```bash
-git clone https://github.com/PabloMoraleh/payday-planner.git
-cd payday-planner
+git clone https://github.com/PabloMoraleh/amazon-payday-planner.git
+cd amazon-payday-planner
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
