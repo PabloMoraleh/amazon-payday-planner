@@ -76,6 +76,81 @@ def add_wish(name, price_cents, priority=2, url=None, notes=None):
     return wish_id
 
 
+def list_wishes():
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM wishes "
+            "WHERE status = ? "
+            "ORDER BY priority ASC, created_at ASC",
+            ("wanted",),
+        ).fetchall()
+
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def get_wish(wish_id):
+    conn = get_connection()
+    try:
+        row = conn.execute(
+            "SELECT * FROM wishes WHERE id = ?",
+            (wish_id,),
+        ).fetchone()
+
+        return dict(row) if row is not None else None
+    finally:
+        conn.close()
+
+
+def update_wish(wish_id, name, price_cents, priority, url, notes):
+    conn = get_connection()
+    try:
+        cursor = conn.execute(
+            "UPDATE wishes "
+            "SET name = ?, price_cents = ?, priority = ?, url = ?, notes = ?, "
+            "updated_at = datetime('now') "
+            "WHERE id = ?",
+            (name, price_cents, priority, url, notes, wish_id),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
+
+
+def delete_wish(wish_id):
+    conn = get_connection()
+    try:
+        cursor = conn.execute(
+            "DELETE FROM wishes WHERE id = ?",
+            (wish_id,),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
+
+
+def mark_as_bought(wish_id, bought_price_cents):
+    conn = get_connection()
+    try:
+        cursor = conn.execute(
+            "UPDATE wishes "
+            "SET status = 'bought', "
+            "bought_price_cents = ?, "
+            "bought_at = datetime('now'), "
+            "updated_at = datetime('now') "
+            "WHERE id = ?",
+            (bought_price_cents, wish_id),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     init_db()
     print("Database ready")
