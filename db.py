@@ -6,7 +6,6 @@ DATABASE = "payday.db"
 def get_connection():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
-    # SQLite does not enforce foreign keys unless asked, per connection
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
@@ -62,6 +61,19 @@ def init_db():
     )
     conn.commit()
     conn.close()
+
+
+def add_wish(name, price_cents, priority=2, url=None, notes=None):
+    conn = get_connection()
+    cursor = conn.execute(
+        "INSERT INTO wishes (name, price_cents, priority, url, notes) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (name, price_cents, priority, url, notes),
+    )
+    conn.commit()
+    wish_id = cursor.lastrowid
+    conn.close()
+    return wish_id
 
 
 if __name__ == "__main__":
