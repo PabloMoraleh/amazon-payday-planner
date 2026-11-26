@@ -618,7 +618,7 @@
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
         const vapidPublicKey = {{ vapid_public_key|tojson }};
         const notificationLocale = {{ get_locale().language|tojson }};
-        const browserRemindersEnabled = {{ notification_preferences.enabled|tojson }};
+        let browserRemindersEnabled = {{ notification_preferences.enabled|tojson }};
         const notificationCopy = {
             enabled: {{ _('Notifications are enabled.')|tojson }},
             disabled: {{ _('Notifications were disabled.')|tojson }},
@@ -683,6 +683,7 @@
                     enableReminders.hidden = true;
                     disableReminders.hidden = false;
                     reminderDay.disabled = false;
+                    browserRemindersEnabled = true;
                     notificationStatus.textContent = notificationCopy.enabled;
                 } catch (error) {
                     notificationStatus.textContent = error.message || notificationCopy.enableError;
@@ -700,6 +701,7 @@
                     disableReminders.hidden = true;
                     enableReminders.hidden = false;
                     reminderDay.disabled = true;
+                    browserRemindersEnabled = false;
                     notificationStatus.textContent = notificationCopy.disabled;
                 } catch (error) {
                     notificationStatus.textContent = error.message || notificationCopy.enableError;
