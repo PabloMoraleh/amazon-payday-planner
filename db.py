@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from supabase import Client
 
 
-def add_wish(client: Client, name, price_cents, priority=2, url=None, notes=None):
+def add_wish(client: Client, name, price_cents, priority=2, url=None, notes=None, asin=None):
     response = (
         client.table("wishes")
         .insert(
@@ -15,6 +15,7 @@ def add_wish(client: Client, name, price_cents, priority=2, url=None, notes=None
                 "priority": priority,
                 "url": url,
                 "notes": notes,
+                "asin": asin,
             }
         )
         .select("id")

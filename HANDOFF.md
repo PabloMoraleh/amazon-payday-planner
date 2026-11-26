@@ -21,18 +21,19 @@ Repository: https://github.com/PabloMoraleh/amazon-payday-planner
 
 ## Current implementation state
 
-The `feature/auth` branch contains an initial implementation of:
+The `feature/auth` branch contains the account and database foundation. The open PR #7 has not been merged. The `feature/wish-management` branch builds on that foundation with:
 
 - Email/password sign-up, sign-in and sign-out routes.
 - CSRF protection and server-side sessions with secure cookie settings.
 - A Supabase migration for user-owned tables and RLS policies.
-- A protected wishlist listing page and basic data-access helpers.
+- A protected wishlist listing page, add form, and remove/mark-bought actions.
+- Manual Amazon Spain product links; automatic Amazon product search and images are not implemented.
 - English, Spanish, French and German strings for the account and wishlist pages.
 - Jenkins test pipeline and automated tests using a fake Supabase client.
 
 The migration has **not** been applied to any hosted Supabase project. The Supabase project URL and publishable key have not been configured in this checkout. Do not ask for or use a service-role key or database password in the web app.
 
-The repository copy used in this Codex chat is separate from the user's GitHub Codespace. It was synced from `origin/main` and has a local `feature/auth` branch. Keep the branch workflow in the repo: review changes, push the feature branch, open a PR, then merge after approval. Never include `.env`, local session files or database files.
+The repository copy used in this Codex chat is separate from the user's GitHub Codespace. Keep the branch workflow in the repo: review changes, push the feature branch, open a PR, then merge after approval. Never include `.env`, local session files or database files.
 
 ## Important files
 
@@ -56,10 +57,12 @@ Jenkins currently runs tests only. Connect a Jenkins Multibranch Pipeline to thi
 
 1. Configure a separate Supabase development project and apply the checked-in migration there.
 2. Set the development `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and `SECRET_KEY` in the Codespace secret store; test account confirmation and sign-in against that project.
-3. Add forms/routes for creating, editing, deleting and marking wishes as bought; retain RLS on every request.
-4. Connect Jenkins as a Multibranch Pipeline and confirm pull-request checks run.
-5. Create separate test and production Supabase projects, choose a hosting provider, then add deployment stages and their secrets.
-6. Complete translations for later screens as they are added.
+3. Add editing for existing wishes; retain RLS on every request.
+4. Publish a working public development version, then submit its URL for Amazon Associates review.
+5. Request Amazon Creators API access if the site is accepted and qualifies; add product search/images only through the approved API.
+6. Connect Jenkins as a Multibranch Pipeline and confirm pull-request checks run.
+7. Create separate test and production Supabase projects, choose a hosting provider, then add deployment stages and their secrets.
+8. Complete translations for later screens as they are added.
 
 ## Development notes
 

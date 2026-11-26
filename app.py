@@ -1,8 +1,8 @@
-"""Flask application for the Amazon Payday Planner."""
-
 import os
+import re
 import secrets
 from datetime import timedelta
+from decimal import Decimal, InvalidOperation
 from functools import wraps
 from urllib.parse import urlsplit
 
@@ -25,7 +25,7 @@ from flask_wtf.csrf import CSRFProtect
 from redis import Redis
 from supabase import Client, create_client
 
-from db import list_wishes
+from db import add_wish, delete_wish, get_wish, list_wishes, mark_as_bought
 
 
 csrf = CSRFProtect()
@@ -196,7 +196,114 @@ def create_app(test_config=None):
             user_email=session.get("user_email", ""),
         )
 
+    @app.post("/wishes")
+    @login_required
+    def create_wish():
+        name = request.form.get("name", "").strip()
+        price_text = request.form.get("price", "").strip().replace(",", ".")
+        priority_text = request.form.get("priority", "2")
+        product_url = request.form.get("url", "").strip()
+
+        if not name or len(name) > 200:
+            flash(_("Enter a product name up to 200 characters long."), "error")
+            return redirect(url_for("wishes"))
+
+        try:
+            price = Decimal(price_text)
+            price_cents = int(price * 100)
+        except (InvalidOperation, ValueError, OverflowError):
+            flash(_("Enter a valid price."), "error")
+            return redirect(url_for("wishes"))
+
+        if not price.is_finite() or price < 0 or price * 100 != price_cents:
+            flash(_("Enter a price with up to two decimal places."), "error")
+            return redirect(url_for("wishes"))
+
+        try:
+            priority = int(priority_text)
+        except ValueError:
+            priority = 0
+
+        if priority not in {1, 2, 3}:
+            flash(_("Choose a priority from 1 to 3."), "error")
+            return redirect(url_for("wishes"))
+
+        if product_url and not _is_amazon_es_url(product_url):
+            flash(_("Enter a valid Amazon Spain product link."), "error")
+            return redirect(url_for("wishes"))
+
+        try:
+            add_wish(
+                g.supabase,
+                name=name,
+                price_cents=price_cents,
+                priority=priority,
+                url=product_url or None,
+                asin=_extract_asin(product_url),
+            )
+        except Exception:
+            current_app.logger.exception("Could not create wish")
+            abort(503)
+
+        flash(_("Product added to your wishlist."), "success")
+        return redirect(url_for("wishes"))
+
+    @app.post("/wishes/<int:wish_id>/bought")
+    @login_required
+    def wish_bought(wish_id):
+        try:
+            wish = get_wish(g.supabase, wish_id)
+        except Exception:
+            current_app.logger.exception("Could not load wish")
+            abort(503)
+        if wish is None:
+            abort(404)
+
+        try:
+            updated = mark_as_bought(g.supabase, wish_id, wish["price_cents"])
+        except Exception:
+            current_app.logger.exception("Could not mark wish as bought")
+            abort(503)
+        if not updated:
+            abort(404)
+
+        flash(_("Product marked as bought."), "success")
+        return redirect(url_for("wishes"))
+
+    @app.post("/wishes/<int:wish_id>/delete")
+    @login_required
+    def wish_delete(wish_id):
+        try:
+            deleted = delete_wish(g.supabase, wish_id)
+        except Exception:
+            current_app.logger.exception("Could not delete wish")
+            abort(503)
+        if not deleted:
+            abort(404)
+
+        flash(_("Product removed from your wishlist."), "success")
+        return redirect(url_for("wishes"))
+
     return app
+
+
+def _is_amazon_es_url(value):
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return False
+    return (
+        parsed.scheme == "https"
+        and parsed.hostname is not None
+        and (parsed.hostname == "amazon.es" or parsed.hostname.endswith(".amazon.es"))
+        and parsed.username is None
+        and parsed.password is None
+    )
+
+
+def _extract_asin(value):
+    match = re.search(r"/(?:dp|gp/product)/([A-Z0-9]{10})(?:/|$)", urlsplit(value).path, re.IGNORECASE)
+    return match.group(1).upper() if match else None
 
 
 def _new_supabase_client() -> Client:
