@@ -8,49 +8,78 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Amazon Payday Planner\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 20:01+0100\n"
+"POT-Creation-Date: 2026-11-26 20:22+0100\n"
 "PO-Revision-Date: 2026-11-26 19:57+0100\n"
 "Last-Translator: \n"
 "Language: fr\n"
 "Language-Team: French\n"
-"Plural-Forms: nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % "
-"1000000 == 0 ? 1 : 2;\n"
+"Plural-Forms: nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.19.0\n"
 
-#: app.py:119 app.py:151
+#: app.py:124 app.py:156
 msgid "Enter your email and password."
 msgstr "Saisissez votre adresse e-mail et votre mot de passe."
 
-#: app.py:121
+#: app.py:126
 msgid "Your password must contain at least 8 characters."
 msgstr "Votre mot de passe doit contenir au moins 8 caractères."
 
-#: app.py:123
+#: app.py:128
 msgid "The passwords do not match."
 msgstr "Les mots de passe ne correspondent pas."
 
-#: app.py:132
+#: app.py:137
 msgid "We could not create the account. Check the details and try again."
-msgstr ""
-"Nous n’avons pas pu créer le compte. Vérifiez les informations et "
-"réessayez."
+msgstr "Nous n’avons pas pu créer le compte. Vérifiez les informations et réessayez."
 
-#: app.py:137 app.py:163 app.py:211
+#: app.py:142 app.py:168 app.py:317
 msgid "Check your email to confirm your account, then sign in."
 msgstr "Consultez votre e-mail pour confirmer votre compte, puis connectez-vous."
 
-#: app.py:160
+#: app.py:165
 msgid "Email or password is incorrect."
 msgstr "L’adresse e-mail ou le mot de passe est incorrect."
 
-#: app.py:178
+#: app.py:183
 msgid "You have signed out."
 msgstr "Vous êtes déconnecté."
 
-#: app.py:238
+#: app.py:209
+msgid "Enter a product name up to 200 characters long."
+msgstr "Saisissez un nom de produit de 200 caractères maximum."
+
+#: app.py:216
+msgid "Enter a valid price."
+msgstr "Saisissez un prix valide."
+
+#: app.py:220
+msgid "Enter a price with up to two decimal places."
+msgstr "Saisissez un prix avec deux décimales au maximum."
+
+#: app.py:229
+msgid "Choose a priority from 1 to 3."
+msgstr "Choisissez une priorité de 1 à 3."
+
+#: app.py:233
+msgid "Enter a valid Amazon Spain product link."
+msgstr "Saisissez un lien valide vers un produit Amazon Espagne."
+
+#: app.py:248
+msgid "Product added to your wishlist."
+msgstr "Produit ajouté à votre liste d’envies."
+
+#: app.py:270
+msgid "Product marked as bought."
+msgstr "Produit marqué comme acheté."
+
+#: app.py:284
+msgid "Product removed from your wishlist."
+msgstr "Produit retiré de votre liste d’envies."
+
+#: app.py:344
 msgid "Your session has expired. Please sign in again."
 msgstr "Votre session a expiré. Veuillez vous reconnecter."
 
@@ -62,7 +91,7 @@ msgstr "Créer un compte"
 msgid "Sign in"
 msgstr "Se connecter"
 
-#: templates/auth.html:38 templates/wishes.html:295 templates/wishes.html:296
+#: templates/auth.html:38 templates/wishes.html:386 templates/wishes.html:387
 msgid "Language"
 msgstr "Langue"
 
@@ -95,69 +124,98 @@ msgid "Create an account"
 msgstr "Créer un compte"
 
 #: templates/auth.html:68
-msgid ""
-"Your password is handled by Supabase Auth. Payday Planner does not store "
-"it."
-msgstr ""
-"Votre mot de passe est géré par Supabase Auth. Payday Planner ne le "
-"stocke pas."
+msgid "Your password is handled by Supabase Auth. Payday Planner does not store it."
+msgstr "Votre mot de passe est géré par Supabase Auth. Payday Planner ne le stocke pas."
 
-#: templates/wishes.html:7 templates/wishes.html:309 templates/wishes.html:320
+#: templates/wishes.html:7 templates/wishes.html:400 templates/wishes.html:411
 msgid "My wishlist"
 msgstr "Ma liste d’envies"
 
-#: templates/wishes.html:304
+#: templates/wishes.html:395
 msgid "Sign out"
 msgstr "Se déconnecter"
 
-#: templates/wishes.html:319
+#: templates/wishes.html:410
 msgid "Your shopping plan"
 msgstr "Votre plan d’achat"
 
-#: templates/wishes.html:321
+#: templates/wishes.html:412
 msgid "Keep your priorities and spending plan in view."
 msgstr "Gardez vos priorités et votre budget en vue."
 
-#: templates/wishes.html:325 templates/wishes.html:326
+#: templates/wishes.html:416 templates/wishes.html:417
 msgid "Search your wishlist"
 msgstr "Rechercher dans votre liste d’envies"
 
-#: templates/wishes.html:327
+#: templates/wishes.html:418
 msgid "Search"
 msgstr "Rechercher"
 
-#: templates/wishes.html:333
+#: templates/wishes.html:423
+msgid "Add a product"
+msgstr "Ajouter un produit"
+
+#: templates/wishes.html:428
+msgid "Product name"
+msgstr "Nom du produit"
+
+#: templates/wishes.html:432
+msgid "Estimated price in EUR"
+msgstr "Prix estimé en EUR"
+
+#: templates/wishes.html:436
+msgid "Priority"
+msgstr "Priorité"
+
+#: templates/wishes.html:438 templates/wishes.html:439 templates/wishes.html:440
+#: templates/wishes.html:467
+#, python-format
+msgid "Priority %(priority)s"
+msgstr "Priorité %(priority)s"
+
+#: templates/wishes.html:444
+msgid "Amazon Spain product link"
+msgstr "Lien vers un produit Amazon Espagne"
+
+#: templates/wishes.html:447
+msgid "Add to wishlist"
+msgstr "Ajouter à la liste d’envies"
+
+#: templates/wishes.html:454
 msgid "Items in your wishlist"
 msgstr "Articles de votre liste d’envies"
 
-#: templates/wishes.html:336 templates/wishes.html:393
+#: templates/wishes.html:457 templates/wishes.html:525
 msgid "item"
 msgid_plural "items"
 msgstr[0] "article"
 msgstr[1] "articles"
 msgstr[2] "articles"
 
-#: templates/wishes.html:346
-#, python-format
-msgid "Priority %(priority)s"
-msgstr "Priorité %(priority)s"
-
-#: templates/wishes.html:351
+#: templates/wishes.html:472
 msgid "View item"
 msgstr "Voir l’article"
 
-#: templates/wishes.html:358
+#: templates/wishes.html:479
 msgid "Estimated price"
 msgstr "Prix estimé"
 
-#: templates/wishes.html:365
+#: templates/wishes.html:485
+msgid "Mark as bought"
+msgstr "Marquer comme acheté"
+
+#: templates/wishes.html:489
+msgid "Remove"
+msgstr "Supprimer"
+
+#: templates/wishes.html:497
 msgid "No matching items."
 msgstr "Aucun article correspondant."
 
-#: templates/wishes.html:368
+#: templates/wishes.html:500
 msgid "No wishes yet."
 msgstr "Vous n’avez pas encore ajouté d’envies."
 
-#: templates/wishes.html:394
+#: templates/wishes.html:526
 msgid "items"
 msgstr "articles"

@@ -94,6 +94,11 @@
             color: #14532d;
         }
 
+        .messages.error {
+            background: #fff4f4;
+            color: #b12704;
+        }
+
         .subbar {
             padding: 11px max(20px, calc((100vw - 1120px) / 2));
             background: #232f3e;
@@ -160,6 +165,89 @@
             color: #0f1111;
             font-size: 14px;
             font-weight: 700;
+        }
+
+        .add-form {
+            margin: 0 0 28px;
+            padding: 20px;
+            border: 1px solid #d5d9d9;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .add-form h2 {
+            margin: 0 0 16px;
+            font-size: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 14px;
+            align-items: end;
+        }
+
+        .form-field {
+            display: grid;
+            gap: 6px;
+            color: #333;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .form-field input,
+        .form-field select {
+            width: 100%;
+            min-height: 40px;
+            padding: 8px 10px;
+            border: 1px solid #888c8c;
+            border-radius: 4px;
+            background: white;
+            color: #0f1111;
+            font: inherit;
+            font-weight: 400;
+        }
+
+        .form-field-full {
+            grid-column: 1 / -1;
+        }
+
+        .primary-button,
+        .secondary-button,
+        .danger-button {
+            min-height: 38px;
+            padding: 8px 12px;
+            border: 1px solid transparent;
+            border-radius: 5px;
+            font: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .primary-button {
+            background: #ffd814;
+            border-color: #fcd200;
+            color: #0f1111;
+        }
+
+        .secondary-button {
+            background: #fff;
+            border-color: #adb1b8;
+            color: #0f1111;
+        }
+
+        .danger-button {
+            background: #fff;
+            border-color: #c40000;
+            color: #b12704;
+        }
+
+        .wish-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            grid-column: 1 / -1;
         }
 
         .list-heading {
@@ -269,6 +357,14 @@
                 padding: 14px;
             }
 
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-field-full {
+                grid-column: auto;
+            }
+
             .wish-icon {
                 width: 56px;
                 height: 56px;
@@ -311,7 +407,7 @@
     <main>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% for category, message in messages %}
-                <p class="messages" role="status">{{ message }}</p>
+                <p class="messages {{ category }}" role="status">{{ message }}</p>
             {% endfor %}
         {% endwith %}
         <section class="intro">
@@ -326,6 +422,36 @@
                     aria-label="{{ _('Search your wishlist') }}">
                 <span class="search-label">{{ _('Search') }}</span>
             </label>
+        </section>
+
+        <section class="add-form" aria-labelledby="add-wish-heading">
+            <h2 id="add-wish-heading">{{ _('Add a product') }}</h2>
+            <form method="post" action="{{ url_for('create_wish') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-grid">
+                    <label class="form-field">
+                        {{ _('Product name') }}
+                        <input name="name" type="text" maxlength="200" required autocomplete="off">
+                    </label>
+                    <label class="form-field">
+                        {{ _('Estimated price in EUR') }}
+                        <input name="price" type="number" min="0" step="0.01" required>
+                    </label>
+                    <label class="form-field">
+                        {{ _('Priority') }}
+                        <select name="priority">
+                            <option value="1">{{ _('Priority %(priority)s', priority=1) }}</option>
+                            <option value="2" selected>{{ _('Priority %(priority)s', priority=2) }}</option>
+                            <option value="3">{{ _('Priority %(priority)s', priority=3) }}</option>
+                        </select>
+                    </label>
+                    <label class="form-field form-field-full">
+                        {{ _('Amazon Spain product link') }}
+                        <input name="url" type="url" placeholder="https://www.amazon.es/dp/...">
+                    </label>
+                    <button class="primary-button" type="submit">{{ _('Add to wishlist') }}</button>
+                </div>
+            </form>
         </section>
 
         {% if wishes %}
@@ -356,6 +482,17 @@
                 <div class="price">
                             {{ format_currency(wish["price_cents"] / 100, wish["currency"]) }}
                             <small>{{ _('Estimated price') }}</small>
+                </div>
+
+                <div class="wish-actions">
+                    <form method="post" action="{{ url_for('wish_bought', wish_id=wish['id']) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="secondary-button" type="submit">{{ _('Mark as bought') }}</button>
+                    </form>
+                    <form method="post" action="{{ url_for('wish_delete', wish_id=wish['id']) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="danger-button" type="submit">{{ _('Remove') }}</button>
+                    </form>
                 </div>
             </article>
             {% endfor %}
