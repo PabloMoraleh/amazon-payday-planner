@@ -2,13 +2,9 @@
 
 > *Not affiliated with or endorsed by Amazon.* Rank what you want to buy and see what your next payday can afford.
 
-**Status:** 🚧 Work in progress. Email/password account flows and the first Supabase schema are implemented; the database migration still needs to be applied to each Supabase environment.
+**Status:** 🚧 Work in progress. Account flows, the first Supabase schema, and basic wishlist management are implemented; the database migration still needs to be applied to each Supabase environment.
 
 ## Why this exists
-
-<!-- TODO: rewrite this section in your own words (2-3 sentences).
-     What problem do you have today? How do you handle "I'll buy it as soon as I get paid" right now?
-     Example angle: a notes app / spreadsheet that gets messy, impulse buys, forgetting what you wanted. -->
 
 I keep a mental list of things I plan to buy "as soon as I get paid". Amazon Payday Planner turns that list into something I can rank, budget against and actually follow.
 
@@ -42,15 +38,15 @@ Items are taken in priority order (ties broken by the date they were added). Eac
 
 ## Getting started
 
+Use Python 3.11 or newer. Copy `.env.example` to `.env` and add your Supabase project URL, publishable key and a random secret key before running the app.
+
 ```bash
 git clone https://github.com/PabloMoraleh/amazon-payday-planner.git
 cd amazon-payday-planner
-# Python 3.11 or newer is required by the Supabase Python SDK.
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# Fill in SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, and a random SECRET_KEY.
 flask run
 ```
 
@@ -67,11 +63,14 @@ The `Jenkinsfile` installs dependencies, compiles translations and runs tests. C
 ## Roadmap
 
 - [x] **Phase 1 foundation:** Flask email/password auth, Supabase schema and per-user row-level security
-- [ ] **Phase 1:** complete wish create, edit, delete and purchase routes
+- [x] **Phase 1:** add wishes, remove them, and mark them as bought
+- [ ] **Phase 1:** edit wishes and add the product search integration
 - [ ] **Phase 2:** budget logic with tests
 - [ ] **Phase 3:** finish translations across the complete interface (English, Spanish, French and German)
 - [ ] **Phase 4:** separate hosted environments and Jenkins deployment stages
 - [ ] **Later:** payday reminders, a "cooling-off" period for new wishes, monthly spending history
+
+Product links can currently be entered manually for Amazon Spain. Automatic Amazon search and product images depend on Amazon Creators API access and must follow its current usage and display policies.
 
 ## License
 

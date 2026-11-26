@@ -35,29 +35,79 @@ class FakeAuth:
 
 
 class FakeQuery:
+    def __init__(self, client):
+        self.client = client
+        self.filters = {}
+        self.operation = "select"
+        self.values = None
+        self.single = False
+
     def select(self, *_args):
         return self
 
-    def eq(self, *_args):
+    def eq(self, key, value):
+        self.filters[key] = value
         return self
 
     def order(self, *_args):
         return self
 
+    def insert(self, values):
+        self.operation = "insert"
+        self.values = values
+        return self
+
+    def update(self, values):
+        self.operation = "update"
+        self.values = values
+        return self
+
+    def delete(self):
+        self.operation = "delete"
+        return self
+
+    def maybe_single(self):
+        self.single = True
+        return self
+
     def execute(self):
-        return SimpleNamespace(data=[])
+        if self.operation == "insert":
+            wish = {
+                "id": len(self.client.wishes) + 1,
+                "currency": "EUR",
+                "status": "wanted",
+                **self.values,
+            }
+            self.client.wishes.append(wish)
+            return SimpleNamespace(data=[{"id": wish["id"]}])
+
+        rows = [
+            wish
+            for wish in self.client.wishes
+            if all(wish.get(key) == value for key, value in self.filters.items())
+        ]
+        if self.operation == "update":
+            for wish in rows:
+                wish.update(self.values)
+        elif self.operation == "delete":
+            self.client.wishes = [wish for wish in self.client.wishes if wish not in rows]
+        if self.single:
+            return SimpleNamespace(data=rows[0] if rows else None)
+        return SimpleNamespace(data=[{"id": wish["id"]} for wish in rows] if self.operation != "select" else rows)
 
 
 class FakeClient:
     def __init__(self):
         self.auth = FakeAuth()
+        self.wishes = []
 
     def table(self, _table_name):
-        return FakeQuery()
+        return FakeQuery(self)
 
 
 @pytest.fixture
 def app(tmp_path):
+    fake_client = FakeClient()
     return create_app(
         {
             "TESTING": True,
@@ -67,7 +117,7 @@ def app(tmp_path):
             "SUPABASE_PUBLISHABLE_KEY": "test-publishable-key",
             "SESSION_FILE_DIR": str(tmp_path / "sessions"),
             "WTF_CSRF_ENABLED": False,
-            "SUPABASE_CLIENT_FACTORY": lambda _url, _key: FakeClient(),
+            "SUPABASE_CLIENT_FACTORY": lambda _url, _key: fake_client,
         }
     )
 
@@ -127,6 +177,110 @@ def test_signup_requires_matching_passwords(app):
 
     assert response.status_code == 200
     assert b"The passwords do not match." in response.data
+
+
+def test_user_can_add_and_mark_a_wish_as_bought(app):
+    client = app.test_client()
+    client.post(
+        "/login",
+        data={"email": "person@example.com", "password": "safe-password"},
+    )
+
+    response = client.post(
+        "/wishes",
+        data={
+            "name": "Wireless headphones",
+            "price": "49.99",
+            "priority": "1",
+            "url": "https://www.amazon.es/dp/B012345678",
+        },
+    )
+
+    assert response.status_code == 302
+    assert b"Wireless headphones" in client.get("/wishes").data
+    assert app.test_client().get("/wishes").status_code == 302
+    assert app.config["SUPABASE_CLIENT_FACTORY"]("", "").wishes[0]["asin"] == "B012345678"
+
+    bought_response = client.post("/wishes/1/bought")
+
+    assert bought_response.status_code == 302
+    assert b"Wireless headphones" not in client.get("/wishes").data
+
+
+def test_user_can_remove_a_wish(app):
+    client = app.test_client()
+    client.post(
+        "/login",
+        data={"email": "person@example.com", "password": "safe-password"},
+    )
+    client.post(
+        "/wishes",
+        data={"name": "Desk lamp", "price": "20.00", "priority": "2"},
+    )
+
+    response = client.post("/wishes/1/delete")
+
+    assert response.status_code == 302
+    assert b"Desk lamp" not in client.get("/wishes").data
+
+
+def test_add_wish_rejects_non_amazon_links(app):
+    client = app.test_client()
+    client.post(
+        "/login",
+        data={"email": "person@example.com", "password": "safe-password"},
+    )
+
+    response = client.post(
+        "/wishes",
+        data={
+            "name": "Wireless headphones",
+            "price": "49.99",
+            "priority": "1",
+            "url": "https://example.com/product",
+        },
+    )
+
+    assert response.status_code == 302
+    assert b"Wireless headphones" not in client.get("/wishes").data
+
+
+@pytest.mark.parametrize(
+    ("locale", "expected_text"),
+    [
+        ("es", "Añadir un producto"),
+        ("fr", "Ajouter un produit"),
+        ("de", "Produkt hinzufügen"),
+        ("en", "Add a product"),
+    ],
+)
+def test_wishlist_form_is_translated(app, locale, expected_text):
+    client = app.test_client()
+    client.post(
+        "/login",
+        data={"email": "person@example.com", "password": "safe-password"},
+    )
+    client.post("/language", data={"locale": locale, "next": "/wishes"})
+
+    response = client.get("/wishes")
+
+    assert response.status_code == 200
+    assert expected_text.encode() in response.data
+
+
+def test_add_wish_rejects_prices_with_more_than_two_decimal_places(app):
+    client = app.test_client()
+    client.post(
+        "/login",
+        data={"email": "person@example.com", "password": "safe-password"},
+    )
+
+    client.post(
+        "/wishes",
+        data={"name": "Desk lamp", "price": "12.345", "priority": "2"},
+    )
+
+    assert b"Desk lamp" not in client.get("/wishes").data
 
 
 @pytest.mark.parametrize(

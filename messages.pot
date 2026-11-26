@@ -1,15 +1,14 @@
-# Translations template for Amazon Payday Planner.
+# Translations template for PROJECT.
 # Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the Amazon Payday
-# Planner project.
+# This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Amazon Payday Planner 0.1.0\n"
+"Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-26 20:01+0100\n"
+"POT-Creation-Date: 2026-11-26 20:23+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,35 +17,67 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.19.0\n"
 
-#: app.py:119 app.py:151
+#: app.py:124 app.py:156
 msgid "Enter your email and password."
 msgstr ""
 
-#: app.py:121
+#: app.py:126
 msgid "Your password must contain at least 8 characters."
 msgstr ""
 
-#: app.py:123
+#: app.py:128
 msgid "The passwords do not match."
 msgstr ""
 
-#: app.py:132
+#: app.py:137
 msgid "We could not create the account. Check the details and try again."
 msgstr ""
 
-#: app.py:137 app.py:163 app.py:211
+#: app.py:142 app.py:168 app.py:317
 msgid "Check your email to confirm your account, then sign in."
 msgstr ""
 
-#: app.py:160
+#: app.py:165
 msgid "Email or password is incorrect."
 msgstr ""
 
-#: app.py:178
+#: app.py:183
 msgid "You have signed out."
 msgstr ""
 
-#: app.py:238
+#: app.py:209
+msgid "Enter a product name up to 200 characters long."
+msgstr ""
+
+#: app.py:216
+msgid "Enter a valid price."
+msgstr ""
+
+#: app.py:220
+msgid "Enter a price with up to two decimal places."
+msgstr ""
+
+#: app.py:229
+msgid "Choose a priority from 1 to 3."
+msgstr ""
+
+#: app.py:233
+msgid "Enter a valid Amazon Spain product link."
+msgstr ""
+
+#: app.py:248
+msgid "Product added to your wishlist."
+msgstr ""
+
+#: app.py:270
+msgid "Product marked as bought."
+msgstr ""
+
+#: app.py:284
+msgid "Product removed from your wishlist."
+msgstr ""
+
+#: app.py:344
 msgid "Your session has expired. Please sign in again."
 msgstr ""
 
@@ -58,7 +89,7 @@ msgstr ""
 msgid "Sign in"
 msgstr ""
 
-#: templates/auth.html:38 templates/wishes.html:295 templates/wishes.html:296
+#: templates/auth.html:38 templates/wishes.html:391 templates/wishes.html:392
 msgid "Language"
 msgstr ""
 
@@ -96,61 +127,94 @@ msgid ""
 "it."
 msgstr ""
 
-#: templates/wishes.html:7 templates/wishes.html:309 templates/wishes.html:320
+#: templates/wishes.html:7 templates/wishes.html:405 templates/wishes.html:416
 msgid "My wishlist"
 msgstr ""
 
-#: templates/wishes.html:304
+#: templates/wishes.html:400
 msgid "Sign out"
 msgstr ""
 
-#: templates/wishes.html:319
+#: templates/wishes.html:415
 msgid "Your shopping plan"
 msgstr ""
 
-#: templates/wishes.html:321
+#: templates/wishes.html:417
 msgid "Keep your priorities and spending plan in view."
 msgstr ""
 
-#: templates/wishes.html:325 templates/wishes.html:326
+#: templates/wishes.html:421 templates/wishes.html:422
 msgid "Search your wishlist"
 msgstr ""
 
-#: templates/wishes.html:327
+#: templates/wishes.html:423
 msgid "Search"
 msgstr ""
 
-#: templates/wishes.html:333
+#: templates/wishes.html:428
+msgid "Add a product"
+msgstr ""
+
+#: templates/wishes.html:433
+msgid "Product name"
+msgstr ""
+
+#: templates/wishes.html:437
+msgid "Estimated price in EUR"
+msgstr ""
+
+#: templates/wishes.html:441
+msgid "Priority"
+msgstr ""
+
+#: templates/wishes.html:443 templates/wishes.html:444
+#: templates/wishes.html:445 templates/wishes.html:472
+#, python-format
+msgid "Priority %(priority)s"
+msgstr ""
+
+#: templates/wishes.html:449
+msgid "Amazon Spain product link"
+msgstr ""
+
+#: templates/wishes.html:452
+msgid "Add to wishlist"
+msgstr ""
+
+#: templates/wishes.html:459
 msgid "Items in your wishlist"
 msgstr ""
 
-#: templates/wishes.html:336 templates/wishes.html:393
+#: templates/wishes.html:462 templates/wishes.html:530
 msgid "item"
 msgid_plural "items"
 msgstr[0] ""
 msgstr[1] ""
 
-#: templates/wishes.html:346
-#, python-format
-msgid "Priority %(priority)s"
-msgstr ""
-
-#: templates/wishes.html:351
+#: templates/wishes.html:477
 msgid "View item"
 msgstr ""
 
-#: templates/wishes.html:358
+#: templates/wishes.html:484
 msgid "Estimated price"
 msgstr ""
 
-#: templates/wishes.html:365
+#: templates/wishes.html:490
+msgid "Mark as bought"
+msgstr ""
+
+#: templates/wishes.html:494
+msgid "Remove"
+msgstr ""
+
+#: templates/wishes.html:502
 msgid "No matching items."
 msgstr ""
 
-#: templates/wishes.html:368
+#: templates/wishes.html:505
 msgid "No wishes yet."
 msgstr ""
 
-#: templates/wishes.html:394
+#: templates/wishes.html:531
 msgid "items"
 msgstr ""
