@@ -251,14 +251,26 @@ def create_app(test_config=None):
             parsed_endpoint = urlsplit(endpoint)
         except ValueError:
             return jsonify({"error": _("Could not enable notifications. Please try again.")}), 400
-        if (
-            parsed_endpoint.scheme != "https"
-            or parsed_endpoint.username is not None
-            or parsed_endpoint.password is not None
-            or not parsed_endpoint.hostname
-            or not keys.get("p256dh")
-            or not keys.get("auth")
-        ):
+        hostname = (parsed_endpoint.hostname or "").lower().rstrip(".")
+        supported_push_host = (
+            hostname == "fcm.googleapis.com"
+            or hostname == "web.push.apple.com"
+            or hostname == "notify.windows.com"
+            or hostname.endswith(".notify.windows.com")
+            or hostname == "push.services.mozilla.com"
+            or hostname.endswith(".push.services.mozilla.com")
+        )
+        try:
+            supported_endpoint = (
+                parsed_endpoint.scheme == "https"
+                and parsed_endpoint.username is None
+                and parsed_endpoint.password is None
+                and parsed_endpoint.port in {None, 443}
+                and supported_push_host
+            )
+        except ValueError:
+            supported_endpoint = False
+        if not supported_endpoint or not keys.get("p256dh") or not keys.get("auth"):
             return jsonify({"error": _("Could not enable notifications. Please try again.")}), 400
 
         try:
@@ -448,6 +460,30 @@ def create_app(test_config=None):
         return redirect(url_for("wishes"))
 
     return app
+
+
+def _is_supported_push_endpoint(value):
+    try:
+        parsed = urlsplit(value)
+        hostname = (parsed.hostname or "").lower().rstrip(".")
+        port = parsed.port
+    except (TypeError, ValueError):
+        return False
+    supported_host = (
+        hostname == "fcm.googleapis.com"
+        or hostname == "web.push.apple.com"
+        or hostname == "notify.windows.com"
+        or hostname.endswith(".notify.windows.com")
+        or hostname == "push.services.mozilla.com"
+        or hostname.endswith(".push.services.mozilla.com")
+    )
+    return (
+        parsed.scheme == "https"
+        and parsed.username is None
+        and parsed.password is None
+        and port in {None, 443}
+        and supported_host
+    )
 
 
 def _is_amazon_es_url(value):
