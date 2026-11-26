@@ -218,3 +218,45 @@ msgstr "Du hast noch keine Wünsche hinzugefügt."
 #: templates/wishes.html:526
 msgid "items"
 msgstr "Artikel"
+
+msgid "Monthly reminders"
+msgstr "Monatliche Erinnerungen"
+
+msgid "Get a reminder at the beginning of the month while you have items on your wishlist."
+msgstr "Du erhältst zu Monatsbeginn eine Erinnerung, solange Artikel auf deiner Wunschliste stehen."
+
+msgid "Reminder day"
+msgstr "Erinnerungstag"
+
+msgid "Enable browser reminders"
+msgstr "Browser-Erinnerungen aktivieren"
+
+msgid "Disable browser reminders"
+msgstr "Browser-Erinnerungen deaktivieren"
+
+msgid "Notifications are enabled."
+msgstr "Erinnerungen sind aktiviert."
+
+msgid "Notifications were disabled."
+msgstr "Erinnerungen wurden deaktiviert."
+
+msgid "Your browser does not support push notifications."
+msgstr "Dein Browser unterstützt keine Push-Benachrichtigungen."
+
+msgid "Notifications are not configured on this server yet."
+msgstr "Erinnerungen sind auf diesem Server noch nicht eingerichtet."
+
+msgid "Allow notifications in your browser to continue."
+msgstr "Erlaube Browser-Benachrichtigungen, um fortzufahren."
+
+msgid "Could not enable notifications. Please try again."
+msgstr "Erinnerungen konnten nicht aktiviert werden. Bitte versuche es erneut."
+
+msgid "Could not save the reminder day. Please try again."
+msgstr "Der Erinnerungstag konnte nicht gespeichert werden. Bitte versuche es erneut."
+
+msgid "Could not disable notifications. Please try again."
+msgstr "Erinnerungen konnten nicht deaktiviert werden. Bitte versuche es erneut."
+
+msgid "Choose a day from 1 to 5."
+msgstr "Wähle einen Tag zwischen dem 1. und 5."
