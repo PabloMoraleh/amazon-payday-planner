@@ -247,9 +247,14 @@ def create_app(test_config=None):
         endpoint = subscription.get("endpoint", "")
         if not isinstance(endpoint, str) or len(endpoint) > 4096:
             return jsonify({"error": _("Could not enable notifications. Please try again.")}), 400
-        parsed_endpoint = urlsplit(endpoint)
+        try:
+            parsed_endpoint = urlsplit(endpoint)
+        except ValueError:
+            return jsonify({"error": _("Could not enable notifications. Please try again.")}), 400
         if (
             parsed_endpoint.scheme != "https"
+            or parsed_endpoint.username is not None
+            or parsed_endpoint.password is not None
             or not parsed_endpoint.hostname
             or not keys.get("p256dh")
             or not keys.get("auth")
@@ -299,6 +304,8 @@ def create_app(test_config=None):
     @login_required
     def notification_preferences_update():
         data = request.get_json(silent=True) or {}
+        if not isinstance(data, dict):
+            return jsonify({"error": _("Could not save the reminder day. Please try again.")}), 400
         try:
             reminder_day = int(data.get("reminder_day", 1))
         except (TypeError, ValueError):
