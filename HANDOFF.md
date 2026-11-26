@@ -71,3 +71,13 @@ Jenkins currently runs tests only. Connect a Jenkins Multibranch Pipeline to thi
 - Supabase CLI v3 targets local resources by default. Use `--remote` explicitly for hosted targets and review every hosted change before applying it. Never run a migration against production during development.
 - To extract and compile translations, use `pybabel extract`, `pybabel update` and `pybabel compile` with `babel.cfg` from the repository root.
 - Run automated tests with `.venv/bin/python -m pytest -q` (or `python -m pytest -q` in the Codespace virtual environment).
+
+## Monthly browser reminders
+
+- Users can opt in to one browser push reminder each month while they have pending wishes.
+- The preferred day is configurable from the 1st through the 5th; the scheduled job runs during the first 7 calendar days to account for time-zone differences.
+- The browser app needs `VAPID_PUBLIC_KEY`. Keep the private key and Supabase service-role key out of the web app and store them as protected Jenkins credentials.
+- The Jenkins multibranch pipeline uses credential IDs `prod-supabase-url`, `prod-supabase-service-role-key`, `vapid-private-key` and `vapid-subject` for the scheduled reminder stage.
+- Apply the new migration to each Supabase environment before enabling the feature. The web app must be served over HTTPS for browser push.
+- Reminder text is generic and does not expose product names on the lock screen. The reminder stops after the user marks or removes all pending wishes.
+

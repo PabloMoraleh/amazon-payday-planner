@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    triggers {
+        cron('H 8 1-7 * *')
+    }
+
     environment {
         APP_ENV = 'test'
         SECRET_KEY = 'jenkins-test-only-secret'
@@ -27,6 +31,25 @@ pipeline {
         stage('Run tests') {
             steps {
                 sh '.venv/bin/python -m pytest -q'
+            }
+        }
+
+        stage('Send monthly browser reminders') {
+            when {
+                allOf {
+                    branch 'main'
+                    triggeredBy 'TimerTrigger'
+                }
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'prod-supabase-url', variable: 'SUPABASE_URL'),
+                    string(credentialsId: 'prod-supabase-service-role-key', variable: 'SUPABASE_SERVICE_ROLE_KEY'),
+                    string(credentialsId: 'vapid-private-key', variable: 'VAPID_PRIVATE_KEY'),
+                    string(credentialsId: 'vapid-subject', variable: 'VAPID_SUBJECT')
+                ]) {
+                    sh '.venv/bin/python scripts/send_monthly_notifications.py'
+                }
             }
         }
     }

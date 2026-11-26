@@ -2,6 +2,7 @@ import os
 import re
 import secrets
 from datetime import timedelta
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 from urllib.parse import urlsplit
@@ -13,6 +14,7 @@ from flask import (
     current_app,
     flash,
     g,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -25,7 +27,17 @@ from flask_wtf.csrf import CSRFProtect
 from redis import Redis
 from supabase import Client, create_client
 
-from db import add_wish, delete_wish, get_wish, list_wishes, mark_as_bought
+from db import (
+    add_wish,
+    delete_push_subscriptions,
+    delete_wish,
+    get_notification_preferences,
+    get_wish,
+    list_wishes,
+    mark_as_bought,
+    save_notification_preferences,
+    save_push_subscription,
+)
 
 
 csrf = CSRFProtect()
@@ -50,6 +62,7 @@ def create_app(test_config=None):
         SECRET_KEY=os.environ.get("SECRET_KEY") or secrets.token_urlsafe(32),
         SUPABASE_URL=os.environ.get("SUPABASE_URL"),
         SUPABASE_PUBLISHABLE_KEY=os.environ.get("SUPABASE_PUBLISHABLE_KEY"),
+        VAPID_PUBLIC_KEY=os.environ.get("VAPID_PUBLIC_KEY"),
         SESSION_TYPE="redis" if redis_url else "cachelib",
         SESSION_FILE_DIR=os.path.join(app.instance_path, "sessions"),
         SESSION_PERMANENT=False,
@@ -190,11 +203,161 @@ def create_app(test_config=None):
         except Exception:
             current_app.logger.exception("Could not load the current user's wishes")
             abort(503)
+        try:
+            notification_preferences = get_notification_preferences(
+                g.supabase, g.current_user_id
+            )
+        except Exception:
+            current_app.logger.exception("Could not load notification preferences")
+            notification_preferences = {
+                "enabled": False,
+                "reminder_day": 1,
+                "timezone": "UTC",
+                "locale": get_locale().language,
+            }
         return render_template(
             "wishes.html",
             wishes=wishes,
             user_email=session.get("user_email", ""),
+            notification_preferences=notification_preferences,
+            vapid_public_key=current_app.config.get("VAPID_PUBLIC_KEY", ""),
         )
+
+    @app.get("/notifications/public-key")
+    @login_required
+    def notification_public_key():
+        public_key = current_app.config.get("VAPID_PUBLIC_KEY")
+        if not public_key:
+            return jsonify({"error": "Notifications are not configured."}), 503
+        return jsonify({"publicKey": public_key})
+
+
+    @app.post("/notifications/subscribe")
+    @login_required
+    def notification_subscribe():
+        data = request.get_json(silent=True) or {}
+        if not isinstance(data, dict):
+            return jsonify({"error": _("Could not enable notifications. Please try again.")}), 400
+        subscription = data.get("subscription") or {}
+        if not isinstance(subscription, dict):
+            return jsonify({"error": _("Could not enable notifications. Please try again.")}), 400
+        keys = subscription.get("keys") or {}
+        if not isinstance(keys, dict):
+            return jsonify({"error": _("Could not enable notifications. Please try again.")}), 400
+        endpoint = subscription.get("endpoint", "")
+        if not isinstance(endpoint, str) or len(endpoint) > 4096:
+            return jsonify({"error": _("Could not enable notifications. Please try again.")}), 400
+        try:
+            parsed_endpoint = urlsplit(endpoint)
+        except ValueError:
+            return jsonify({"error": _("Could not enable notifications. Please try again.")}), 400
+        if (
+            parsed_endpoint.scheme != "https"
+            or parsed_endpoint.username is not None
+            or parsed_endpoint.password is not None
+            or not parsed_endpoint.hostname
+            or not keys.get("p256dh")
+            or not keys.get("auth")
+        ):
+            return jsonify({"error": _("Could not enable notifications. Please try again.")}), 400
+
+        try:
+            reminder_day = int(data.get("reminder_day", 1))
+        except (TypeError, ValueError):
+            reminder_day = 0
+        if reminder_day not in {1, 2, 3, 4, 5}:
+            return jsonify({"error": _("Choose a day from 1 to 5.")}), 400
+
+        timezone_name = data.get("timezone", "UTC")
+        try:
+            ZoneInfo(timezone_name)
+        except (ZoneInfoNotFoundError, TypeError, ValueError):
+            timezone_name = "UTC"
+        locale = data.get("locale", "en")
+        if locale not in SUPPORTED_LOCALES:
+            locale = "en"
+
+        try:
+            save_push_subscription(
+                g.supabase,
+                g.current_user_id,
+                endpoint,
+                keys["p256dh"],
+                keys["auth"],
+            )
+            save_notification_preferences(
+                g.supabase,
+                g.current_user_id,
+                True,
+                reminder_day,
+                timezone_name,
+                locale,
+            )
+        except Exception:
+            current_app.logger.exception("Could not save browser notification subscription")
+            return jsonify({"error": _("Could not enable notifications. Please try again.")}), 503
+
+        return jsonify({"ok": True})
+
+
+    @app.post("/notifications/preferences")
+    @login_required
+    def notification_preferences_update():
+        data = request.get_json(silent=True) or {}
+        if not isinstance(data, dict):
+            return jsonify({"error": _("Could not save the reminder day. Please try again.")}), 400
+        try:
+            reminder_day = int(data.get("reminder_day", 1))
+        except (TypeError, ValueError):
+            reminder_day = 0
+        if reminder_day not in {1, 2, 3, 4, 5}:
+            return jsonify({"error": _("Choose a day from 1 to 5.")}), 400
+
+        timezone_name = data.get("timezone", "UTC")
+        try:
+            ZoneInfo(timezone_name)
+        except (ZoneInfoNotFoundError, TypeError, ValueError):
+            timezone_name = "UTC"
+        locale = data.get("locale", "en")
+        if locale not in SUPPORTED_LOCALES:
+            locale = "en"
+
+        try:
+            current_preferences = get_notification_preferences(g.supabase, g.current_user_id)
+            save_notification_preferences(
+                g.supabase,
+                g.current_user_id,
+                bool(current_preferences.get("enabled")),
+                reminder_day,
+                timezone_name,
+                locale,
+            )
+        except Exception:
+            current_app.logger.exception("Could not update notification preferences")
+            return jsonify({"error": _("Could not save the reminder day. Please try again.")}), 503
+
+        return jsonify({"ok": True})
+
+
+    @app.post("/notifications/unsubscribe")
+    @login_required
+    def notification_unsubscribe():
+        try:
+            delete_push_subscriptions(g.supabase, g.current_user_id)
+            current_preferences = get_notification_preferences(g.supabase, g.current_user_id)
+            save_notification_preferences(
+                g.supabase,
+                g.current_user_id,
+                False,
+                int(current_preferences.get("reminder_day", 1)),
+                current_preferences.get("timezone", "UTC"),
+                current_preferences.get("locale", get_locale().language),
+            )
+        except Exception:
+            current_app.logger.exception("Could not disable browser notifications")
+            return jsonify({"error": _("Could not disable notifications. Please try again.")}), 503
+        return jsonify({"ok": True})
+
 
     @app.post("/wishes")
     @login_required
@@ -260,7 +423,7 @@ def create_app(test_config=None):
             abort(404)
 
         try:
-            updated = mark_as_bought(g.supabase, wish_id, wish["price_cents"])
+            updated = mark_as_bought(g.supabase, wish_id)
         except Exception:
             current_app.logger.exception("Could not mark wish as bought")
             abort(503)

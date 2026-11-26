@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ _('My wishlist') }} | Payday Planner</title>
 
     <style>
@@ -328,6 +329,50 @@
             font-weight: 400;
         }
 
+        .notification-settings {
+            margin: 0 0 24px;
+            padding: 18px;
+            border: 1px solid #d5d9d9;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .notification-settings h2 {
+            margin: 0 0 8px;
+            font-size: 18px;
+        }
+
+        .notification-settings p {
+            margin: 0 0 14px;
+            color: #565959;
+        }
+
+        .notification-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .notification-controls label {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .notification-controls select {
+            min-height: 38px;
+            padding: 6px 10px;
+            border: 1px solid #888c8c;
+            border-radius: 4px;
+            background: white;
+            font: inherit;
+        }
+
+        .notification-status {
+            margin: 12px 0 0 !important;
+            color: #0f1111 !important;
+        }
+
         .empty-state {
             padding: 32px;
             border: 1px solid #d5d9d9;
@@ -410,6 +455,37 @@
                 <p class="messages {{ category }}" role="status">{{ message }}</p>
             {% endfor %}
         {% endwith %}
+        <section class="notification-settings" aria-labelledby="notification-heading">
+            <h2 id="notification-heading">{{ _('Monthly reminders') }}</h2>
+            <p>{{ _('Get a reminder at the beginning of the month while you have items on your wishlist.') }}</p>
+            <div class="notification-controls">
+                <label for="reminder-day">{{ _('Reminder day') }}</label>
+                <select id="reminder-day" {% if not notification_preferences.enabled %}disabled{% endif %}>
+                    {% for day in range(1, 6) %}
+                    <option value="{{ day }}" {% if notification_preferences.reminder_day|int == day %}selected{% endif %}>
+                        {{ day }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <button class="primary-button" id="enable-reminders" type="button"
+                    {% if notification_preferences.enabled %}hidden{% endif %}
+                    {% if not vapid_public_key %}disabled{% endif %}>
+                    {{ _('Enable browser reminders') }}
+                </button>
+                <button class="secondary-button" id="disable-reminders" type="button"
+                    {% if not notification_preferences.enabled %}hidden{% endif %}>
+                    {{ _('Disable browser reminders') }}
+                </button>
+            </div>
+            <p class="notification-status" id="notification-status" role="status" aria-live="polite">
+                {% if notification_preferences.enabled %}
+                    {{ _('Notifications are enabled.') }}
+                {% elif not vapid_public_key %}
+                    {{ _('Notifications are not configured on this server yet.') }}
+                {% endif %}
+            </p>
+        </section>
+
         <section class="intro">
             <div>
                 <p class="eyebrow">{{ _('Your shopping plan') }}</p>
@@ -531,6 +607,122 @@
                 const plural = {{ _('items')|tojson }};
                 countLabel.textContent = visibleCount === 1 ? singular : plural;
                 emptySearch.hidden = visibleCount !== 0;
+            });
+        }
+    </script>
+    <script>
+        const enableReminders = document.getElementById("enable-reminders");
+        const disableReminders = document.getElementById("disable-reminders");
+        const reminderDay = document.getElementById("reminder-day");
+        const notificationStatus = document.getElementById("notification-status");
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        const vapidPublicKey = {{ vapid_public_key|tojson }};
+        const notificationLocale = {{ get_locale().language|tojson }};
+        let browserRemindersEnabled = {{ notification_preferences.enabled|tojson }};
+        const notificationCopy = {
+            enabled: {{ _('Notifications are enabled.')|tojson }},
+            disabled: {{ _('Notifications were disabled.')|tojson }},
+            unsupported: {{ _('Your browser does not support push notifications.')|tojson }},
+            permission: {{ _('Allow notifications in your browser to continue.')|tojson }},
+            enableError: {{ _('Could not enable notifications. Please try again.')|tojson }},
+            saveError: {{ _('Could not save the reminder day. Please try again.')|tojson }}
+        };
+
+        function decodeVapidKey(value) {
+            const padded = value + "=".repeat((4 - value.length % 4) % 4);
+            const decoded = atob(padded.replace(/-/g, "+").replace(/_/g, "/"));
+            return Uint8Array.from(decoded, (character) => character.charCodeAt(0));
+        }
+
+        async function sendNotificationRequest(path, payload) {
+            const response = await fetch(path, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || notificationCopy.enableError);
+            }
+            return result;
+        }
+
+        if (enableReminders && disableReminders && reminderDay && notificationStatus) {
+            enableReminders.addEventListener("click", async () => {
+                if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+                    notificationStatus.textContent = notificationCopy.unsupported;
+                    return;
+                }
+
+                try {
+                    const permission = await Notification.requestPermission();
+                    if (permission !== "granted") {
+                        notificationStatus.textContent = notificationCopy.permission;
+                        return;
+                    }
+
+                    const registration = await navigator.serviceWorker.register("/static/service-worker.js");
+                    let subscription = await registration.pushManager.getSubscription();
+                    if (!subscription) {
+                        subscription = await registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: decodeVapidKey(vapidPublicKey)
+                        });
+                    }
+
+                    await sendNotificationRequest("/notifications/subscribe", {
+                        subscription: subscription.toJSON(),
+                        reminder_day: Number(reminderDay.value),
+                        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+                        locale: notificationLocale
+                    });
+
+                    enableReminders.hidden = true;
+                    disableReminders.hidden = false;
+                    reminderDay.disabled = false;
+                    browserRemindersEnabled = true;
+                    notificationStatus.textContent = notificationCopy.enabled;
+                } catch (error) {
+                    notificationStatus.textContent = error.message || notificationCopy.enableError;
+                }
+            });
+
+            disableReminders.addEventListener("click", async () => {
+                try {
+                    await sendNotificationRequest("/notifications/unsubscribe", {});
+                    if ("serviceWorker" in navigator) {
+                        const registration = await navigator.serviceWorker.getRegistration("/static/service-worker.js");
+                        const subscription = registration ? await registration.pushManager.getSubscription() : null;
+                        if (subscription) {
+                            await subscription.unsubscribe();
+                        }
+                    }
+                    disableReminders.hidden = true;
+                    enableReminders.hidden = false;
+                    reminderDay.disabled = true;
+                    browserRemindersEnabled = false;
+                    notificationStatus.textContent = notificationCopy.disabled;
+                } catch (error) {
+                    notificationStatus.textContent = error.message || notificationCopy.enableError;
+                }
+            });
+
+            reminderDay.addEventListener("change", async () => {
+                if (!browserRemindersEnabled) {
+                    return;
+                }
+                try {
+                    await sendNotificationRequest("/notifications/preferences", {
+                        reminder_day: Number(reminderDay.value),
+                        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+                        locale: notificationLocale
+                    });
+                } catch (error) {
+                    notificationStatus.textContent = error.message || notificationCopy.saveError;
+                }
             });
         }
     </script>
