@@ -7,6 +7,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pywebpush import WebPushException, webpush
 from supabase import create_client
 
+from push_endpoints import is_supported_push_endpoint
+
 
 MESSAGES = {
     "en": ("Your wishlist reminder", "You still have items on your wishlist to plan for this month."),
@@ -14,6 +16,51 @@ MESSAGES = {
     "fr": ("Rappel de votre liste", "Des articles de votre liste restent à prévoir ce mois-ci."),
     "de": ("Erinnerung an deine Wunschliste", "Für diesen Monat stehen noch Artikel auf deiner Wunschliste."),
 }
+
+
+def send_push_notification(client, user_id, subscription, payload, vapid_private_key, vapid_subject):
+    endpoint = subscription.get("endpoint")
+    if not is_supported_push_endpoint(endpoint):
+        logging.warning("Skipping push subscription with an unsupported endpoint.")
+        (
+            client.table("push_subscriptions")
+            .delete()
+            .eq("user_id", user_id)
+            .eq("endpoint", endpoint)
+            .execute()
+        )
+        return False
+
+    subscription_info = {
+        "endpoint": endpoint,
+        "keys": {
+            "p256dh": subscription["p256dh"],
+            "auth": subscription["auth"],
+        },
+    }
+    try:
+        webpush(
+            subscription_info=subscription_info,
+            data=payload,
+            vapid_private_key=vapid_private_key,
+            vapid_claims={"sub": vapid_subject},
+        )
+        return True
+    except WebPushException as error:
+        status_code = getattr(error, "status_code", None)
+        if status_code is None:
+            status_code = getattr(getattr(error, "response", None), "status_code", None)
+        if status_code in {404, 410}:
+            (
+                client.table("push_subscriptions")
+                .delete()
+                .eq("user_id", user_id)
+                .eq("endpoint", endpoint)
+                .execute()
+            )
+        else:
+            logging.warning("Push delivery failed with status %s", status_code)
+        return False
 
 
 def main():
@@ -77,32 +124,16 @@ def main():
         user_sent = False
 
         for subscription in subscriptions:
-            subscription_info = {
-                "endpoint": subscription["endpoint"],
-                "keys": {
-                    "p256dh": subscription["p256dh"],
-                    "auth": subscription["auth"],
-                },
-            }
-            try:
-                webpush(
-                    subscription_info=subscription_info,
-                    data=payload,
-                    vapid_private_key=vapid_private_key,
-                    vapid_claims={"sub": vapid_subject},
-                )
+            if send_push_notification(
+                client,
+                user_id,
+                subscription,
+                payload,
+                vapid_private_key,
+                vapid_subject,
+            ):
                 user_sent = True
                 sent_count += 1
-            except WebPushException as error:
-                status_code = getattr(error, "status_code", None)
-                if status_code is None:
-                    status_code = getattr(getattr(error, "response", None), "status_code", None)
-                if status_code in {404, 410}:
-                    client.table("push_subscriptions").delete().eq(
-                        "endpoint", subscription["endpoint"]
-                    ).execute()
-                else:
-                    logging.warning("Push delivery failed with status %s", status_code)
 
         if user_sent:
             (
