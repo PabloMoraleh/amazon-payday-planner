@@ -236,9 +236,17 @@ def create_app(test_config=None):
     @login_required
     def notification_subscribe():
         data = request.get_json(silent=True) or {}
+        if not isinstance(data, dict):
+            return jsonify({"error": _("Could not enable notifications. Please try again.")}), 400
         subscription = data.get("subscription") or {}
+        if not isinstance(subscription, dict):
+            return jsonify({"error": _("Could not enable notifications. Please try again.")}), 400
         keys = subscription.get("keys") or {}
+        if not isinstance(keys, dict):
+            return jsonify({"error": _("Could not enable notifications. Please try again.")}), 400
         endpoint = subscription.get("endpoint", "")
+        if not isinstance(endpoint, str) or len(endpoint) > 4096:
+            return jsonify({"error": _("Could not enable notifications. Please try again.")}), 400
         parsed_endpoint = urlsplit(endpoint)
         if (
             parsed_endpoint.scheme != "https"
@@ -258,7 +266,7 @@ def create_app(test_config=None):
         timezone_name = data.get("timezone", "UTC")
         try:
             ZoneInfo(timezone_name)
-        except (ZoneInfoNotFoundError, TypeError):
+        except (ZoneInfoNotFoundError, TypeError, ValueError):
             timezone_name = "UTC"
         locale = data.get("locale", "en")
         if locale not in SUPPORTED_LOCALES:
@@ -301,7 +309,7 @@ def create_app(test_config=None):
         timezone_name = data.get("timezone", "UTC")
         try:
             ZoneInfo(timezone_name)
-        except (ZoneInfoNotFoundError, TypeError):
+        except (ZoneInfoNotFoundError, TypeError, ValueError):
             timezone_name = "UTC"
         locale = data.get("locale", "en")
         if locale not in SUPPORTED_LOCALES:
