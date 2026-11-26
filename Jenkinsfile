@@ -36,7 +36,10 @@ pipeline {
 
         stage('Send monthly browser reminders') {
             when {
-                branch 'main'
+                allOf {
+                    branch 'main'
+                    triggeredBy 'TimerTrigger'
+                }
             }
             steps {
                 withCredentials([
