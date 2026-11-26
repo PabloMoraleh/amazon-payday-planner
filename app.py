@@ -247,15 +247,8 @@ def create_app(test_config=None):
         endpoint = subscription.get("endpoint", "")
         if not isinstance(endpoint, str) or len(endpoint) > 4096:
             return jsonify({"error": _("Could not enable notifications. Please try again.")}), 400
-        try:
-            parsed_endpoint = urlsplit(endpoint)
-        except ValueError:
-            return jsonify({"error": _("Could not enable notifications. Please try again.")}), 400
         if (
-            parsed_endpoint.scheme != "https"
-            or parsed_endpoint.username is not None
-            or parsed_endpoint.password is not None
-            or not parsed_endpoint.hostname
+            not _is_supported_push_endpoint(endpoint)
             or not keys.get("p256dh")
             or not keys.get("auth")
         ):
@@ -448,6 +441,30 @@ def create_app(test_config=None):
         return redirect(url_for("wishes"))
 
     return app
+
+
+def _is_supported_push_endpoint(value):
+    try:
+        parsed = urlsplit(value)
+        hostname = (parsed.hostname or "").lower().rstrip(".")
+        port = parsed.port
+    except (TypeError, ValueError):
+        return False
+    supported_host = (
+        hostname == "fcm.googleapis.com"
+        or hostname == "web.push.apple.com"
+        or hostname == "notify.windows.com"
+        or hostname.endswith(".notify.windows.com")
+        or hostname == "push.services.mozilla.com"
+        or hostname.endswith(".push.services.mozilla.com")
+    )
+    return (
+        parsed.scheme == "https"
+        and parsed.username is None
+        and parsed.password is None
+        and port in {None, 443}
+        and supported_host
+    )
 
 
 def _is_amazon_es_url(value):
