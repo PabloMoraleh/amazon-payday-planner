@@ -1,116 +1,70 @@
 # HANDOFF: Amazon Payday Planner
 
-Context document so any new session (or collaborator) can pick up the project without re-explaining it.
-Repo: https://github.com/PabloMoraleh/amazon-payday-planner
+Repository: https://github.com/PabloMoraleh/amazon-payday-planner
 
-## 1. What the project is
+## Product decisions
 
-A personal wishlist planner. You list what you want to buy, rank it by priority, set a monthly budget and a payday, and the app tells you which items fit in the budget, in priority order, with links ready so you buy them yourself.
+- This is a wishlist and budgeting planner. It never purchases products or stores payment details or shop credentials.
+- Users can make accounts with email and password. Supabase Auth handles passwords.
+- The interface supports English, Spanish, French and German.
+- Payday reminders are postponed. Do not require a user to disclose their payday just to use the app.
+- The owner is learning software development and wants to understand the code. Conversation is in Spanish; source code, comments, branch names, commits and docs are in English.
 
-**Non-goals (decided):** it never buys anything automatically and never stores payment details or shop credentials. Amazon only offers an ordering API through Amazon Business (partner onboarding), and scripting the consumer site is fragile and risky for the account. The project is a planning tool, not a shopping bot.
+## Current architecture
 
-**Why it exists:** portfolio project to restart an abandoned GitHub profile. The goal is a repo that clearly reflects the author's own work, so the author must understand and be able to explain every line.
+- Python and Flask web app.
+- Supabase Auth for accounts; Supabase Postgres for shared, persistent data.
+- PostgreSQL row-level security isolates each user's wishes, price history and budgets.
+- Flask-Session stores Supabase tokens server-side. Development uses a local filesystem cache; deployed environments require Redis.
+- Flask-Babel handles interface translations.
+- Jenkins runs automated checks through the repository's `Jenkinsfile`.
 
-## 2. Tech stack and environment
+## Current implementation state
 
-- Python 3 + Flask (backend), SQLite via the standard `sqlite3` module (storage)
-- pytest (tests, phase 2), React (frontend, phase 3)
-- Development in **GitHub Codespaces** (VS Code in the browser) with a virtual environment in `.venv/`
-- Run the app: `source .venv/bin/activate` then `flask run` (port 5000; in Codespaces open it from the Ports tab or the "Open in Browser" notification)
-- `.gitignore` excludes `.venv/`, `*.db`, `.env`, `instance/`, `__pycache__/`, `.vscode/`, `.DS_Store`
+The `feature/auth` branch contains an initial implementation of:
 
-## 3. Current state
+- Email/password sign-up, sign-in and sign-out routes.
+- CSRF protection and server-side sessions with secure cookie settings.
+- A Supabase migration for user-owned tables and RLS policies.
+- A protected wishlist listing page and basic data-access helpers.
+- English, Spanish, French and German strings for the account and wishlist pages.
+- Jenkins test pipeline and automated tests using a fake Supabase client.
 
-Merged into `main`:
+The migration has **not** been applied to any hosted Supabase project. The Supabase project URL and publishable key have not been configured in this checkout. Do not ask for or use a service-role key or database password in the web app.
 
-- PR #1: README, `.gitignore`, MIT license, minimal Flask app (`app.py`), `requirements.txt`
-- PR #2: SQLite schema in `db.py` (`get_connection()`, `init_db()`)
+The repository copy used in this Codex chat is separate from the user's GitHub Codespace. It was synced from `origin/main` and has a local `feature/auth` branch. Keep the branch workflow in the repo: review changes, push the feature branch, open a PR, then merge after approval. Never include `.env`, local session files or database files.
 
-In progress (branch `feature/add-wish`):
+## Important files
 
-- `add_wish(name, price_cents, priority=2, url=None, notes=None)` in `db.py`: inserts a row and returns its id. Written and tested locally (returns `1` on first insert). **Check with `git log` / GitHub whether it has been committed, pushed and merged before continuing.**
+- `app.py`: Flask app, auth routes, locale selection and protected page.
+- `db.py`: Supabase-backed wish data operations.
+- `supabase/config.jsonc`: local Supabase CLI configuration.
+- `supabase/migrations/`: versioned database schema and RLS policies.
+- `templates/auth.html`, `templates/wishes.html`: account and wishlist screens.
+- `translations/`: gettext catalogs for Spanish, French and German; English is the source language.
+- `tests/`: tests that do not connect to a hosted Supabase project.
+- `Jenkinsfile`: dependency setup, translation compilation and test execution.
+- `.env.example`: local variable names with placeholders only.
 
-Next function to be written by the author: `list_wishes()` (see section 7).
+## Environments and deployment
 
-## 4. File structure
+The code distinguishes local development, automated tests and production configuration. The actual hosted development/test/production projects and deployment stages still need to be set up. Use separate Supabase projects and secrets per environment; do not point test credentials at production. Production startup requires `SECRET_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and `SESSION_REDIS_URL`.
 
-```
-amazon-payday-planner/
-├── app.py            # minimal Flask app, one route "/"
-├── db.py             # connection helper, schema, add_wish()
-├── requirements.txt  # Flask and its dependencies
-├── README.md         # project description (English), roadmap checklist
-├── LICENSE           # MIT
-└── .gitignore
-```
+Jenkins currently runs tests only. Connect a Jenkins Multibranch Pipeline to this GitHub repository so it discovers the `Jenkinsfile`; configure the GitHub webhook and Jenkins credentials in Jenkins itself. Deployment stages must wait until the hosting provider and environments are selected.
 
-`payday.db` is created locally by `init_db()` and is not committed.
+## Next work
 
-## 5. Database schema (in `db.py`)
+1. Configure a separate Supabase development project and apply the checked-in migration there.
+2. Set the development `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and `SECRET_KEY` in the Codespace secret store; test account confirmation and sign-in against that project.
+3. Add forms/routes for creating, editing, deleting and marking wishes as bought; retain RLS on every request.
+4. Connect Jenkins as a Multibranch Pipeline and confirm pull-request checks run.
+5. Create separate test and production Supabase projects, choose a hosting provider, then add deployment stages and their secrets.
+6. Complete translations for later screens as they are added.
 
-- **wishes**: `id`, `name`, `url`, `store` (default 'Amazon'), `asin`, `price_cents`, `currency` (default 'EUR'), `priority` (1-3, default 2), `notes`, `status` ('wanted' | 'bought' | 'dropped'), `track_price` (0/1), `target_price_cents`, `bought_price_cents`, `bought_at`, `created_at`, `updated_at`
-- **price_history**: `id`, `wish_id` (FK to wishes, ON DELETE CASCADE), `price_cents`, `currency`, `source` ('manual' | 'tracker'), `recorded_at`; indexed on `(wish_id, recorded_at)`
-- **budgets**: `id`, `month` (unique, format `YYYY-MM`), `amount_cents`, `currency`, `payday`
+## Development notes
 
-Design decisions:
-
-- **Money is stored as integer cents** (19.99 EUR = 1999) to avoid floating point rounding errors.
-- **`status` instead of a `bought` boolean**, so dropped wishes are kept too.
-- `track_price`, `target_price_cents`, `asin` and `price_history` exist to support a **future price tracker** without changing the schema.
-- `CHECK` constraints make the database reject invalid priorities, negative prices and unknown statuses.
-- `PRAGMA foreign_keys = ON` is set on every connection (SQLite ignores foreign keys otherwise).
-- `updated_at` is filled on insert; it must be updated **from code** when a wish is modified.
-- SQL always uses `?` placeholders, never string formatting (prevents SQL injection).
-
-## 6. Working agreement (how the author wants to work)
-
-- The author is a junior developer with a bootcamp background (HTML/CSS/JS, React with Flux, Flask, SQLAlchemy-style data modeling, JWT, Jest). Conversation is in **Spanish**; **code, comments, commit messages, branch names and docs are in English**.
-- **One step at a time.** Give a small number of commands, wait for the author to paste the output, then continue. Verify claims against the pasted output rather than assuming it worked.
-- **Git flow:** one branch per task (`feature/<name>`), small commits with imperative messages ("Add ...", "Fix ..."), push the branch, open a pull request, review "Files changed", merge, delete the branch, then `git checkout main && git pull`.
-- **Learning goal:** explain what each piece does line by line. The author sometimes asks for the code directly; give it, explain it, and then hand the next small function to the author to write. Review their attempts instead of rewriting them.
-- The README section "Why this exists" is a placeholder: the author should rewrite it in their own words.
-
-## 7. Roadmap and next steps
-
-**Phase 1: backend (current)**
-
-1. `list_wishes()`: all wishes with status 'wanted', ordered by `priority ASC, created_at ASC`, returned as a list of dicts (author to write)
-2. `get_wish(id)`, `update_wish(...)` (remember `updated_at`), `delete_wish(id)`, `mark_as_bought(id, bought_price_cents)`
-3. Call `init_db()` when the Flask app starts
-4. Flask routes: list, add, edit, delete, mark as bought (simple HTML templates first)
-
-**Phase 2: budget logic**
-
-- Table `budgets` CRUD (monthly amount and payday)
-- Function that takes the wanted items and a budget and returns what fits. Current rule: items in priority order (ties by creation date); an item that does not fit is skipped and the next one is considered. This is a first design and may change after testing with real data.
-- pytest tests for the budget logic, including edge cases (empty list, budget of 0, every item too expensive, exact fit)
-
-**Phase 3: React frontend** consuming a JSON API from Flask
-
-**Phase 4: extras**
-
-- Payday reminders (email or Telegram)
-- "Cooling-off" period: a wish that stays on the list for N days gains priority
-- Monthly spending history
-- Price tracker using `price_history`, `track_price` and `target_price_cents` (only through legitimate means; check each site's terms before automating anything)
-
-## 8. Known issues and open questions
-
-- Confirm how to handle wishes in several currencies (the schema has `currency`, the logic assumes one).
-- Decide whether skipping an item that does not fit (and continuing) is the right budget rule, or whether to stop at the first item that does not fit.
-- Add `requirements.txt` updates whenever a package is installed (`pip freeze > requirements.txt`).
-- Port 5000 may be occupied by AirPlay on macOS; use `flask run --port 5001` if running locally on a Mac.
-
-## 9. How to resume
-
-```bash
-cd /workspaces/amazon-payday-planner      # or clone the repo
-source .venv/bin/activate                 # recreate with: python3 -m venv .venv && pip install -r requirements.txt
-git status
-git log --oneline -5
-git branch
-python3 -c "from db import init_db; init_db()"
-flask run
-```
-
-Then check which branch is active, whether `add_wish` was merged, and continue with the next step in section 7.
+- Money is stored as integer cents; priorities are 1 (highest) through 3.
+- The old SQLite database is local-only and is not migrated automatically. Existing sample rows will need an explicit import if they should be kept.
+- Supabase CLI v3 targets local resources by default. Use `--remote` explicitly for hosted targets and review every hosted change before applying it. Never run a migration against production during development.
+- To extract and compile translations, use `pybabel extract`, `pybabel update` and `pybabel compile` with `babel.cfg` from the repository root.
+- Run automated tests with `.venv/bin/python -m pytest -q` (or `python -m pytest -q` in the Codespace virtual environment).

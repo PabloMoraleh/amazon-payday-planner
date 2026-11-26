@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ get_locale().language }}">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>My wishlist | Payday Planner</title>
+    <title>{{ _('My wishlist') }} | Payday Planner</title>
 
     <style>
         :root {
@@ -47,6 +47,51 @@
         .topbar-label {
             font-size: 14px;
             color: #e6e6e6;
+        }
+
+        .account-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            color: #e6e6e6;
+            font-size: 13px;
+        }
+
+        .language-form select {
+            padding: 6px;
+            border: 1px solid #87909a;
+            border-radius: 4px;
+            background: #fff;
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .sign-out {
+            padding: 7px 10px;
+            border: 1px solid #87909a;
+            border-radius: 5px;
+            background: transparent;
+            color: white;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .messages {
+            margin: 0 0 18px;
+            padding: 10px 14px;
+            border-radius: 5px;
+            background: #f0fff4;
+            color: #14532d;
         }
 
         .subbar {
@@ -242,34 +287,53 @@
 <body>
     <header class="topbar">
         <a class="brand" href="/wishes">Payday <span>Planner</span></a>
-        <span class="topbar-label">Plan your next purchase</span>
+        <div class="account-actions">
+            <span>{{ user_email }}</span>
+            <form class="language-form" method="post" action="{{ url_for('set_language') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <label class="visually-hidden" for="locale">{{ _('Language') }}</label>
+                <select id="locale" name="locale" aria-label="{{ _('Language') }}" onchange="this.form.submit()">
+                    {% for code, label in [('en', 'English'), ('es', 'Español'), ('fr', 'Français'), ('de', 'Deutsch')] %}
+                        <option value="{{ code }}" {% if get_locale().language == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <form method="post" action="{{ url_for('logout') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="sign-out" type="submit">{{ _('Sign out') }}</button>
+            </form>
+        </div>
     </header>
 
-    <div class="subbar">My wishlist</div>
+    <div class="subbar">{{ _('My wishlist') }}</div>
 
     <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <p class="messages" role="status">{{ message }}</p>
+            {% endfor %}
+        {% endwith %}
         <section class="intro">
             <div>
-                <p class="eyebrow">Your shopping plan</p>
-                <h1>My wishlist</h1>
-                <p class="description">Keep your priorities and spending plan in view.</p>
+                <p class="eyebrow">{{ _('Your shopping plan') }}</p>
+                <h1>{{ _('My wishlist') }}</h1>
+                <p class="description">{{ _('Keep your priorities and spending plan in view.') }}</p>
             </div>
 
             <label class="search">
-                <input id="wish-search" type="search" placeholder="Search your wishlist"
-                    aria-label="Search your wishlist">
-                <span class="search-label">Search</span>
+                <input id="wish-search" type="search" placeholder="{{ _('Search your wishlist') }}"
+                    aria-label="{{ _('Search your wishlist') }}">
+                <span class="search-label">{{ _('Search') }}</span>
             </label>
         </section>
 
         {% if wishes %}
         <p class="list-heading">
-            <span>Items in your wishlist</span>
+            <span>{{ _('Items in your wishlist') }}</span>
             <span>
                 <strong id="wish-count">{{ wishes|length }}</strong>
-                <span id="wish-count-label">
-                    {% if wishes|length == 1 %}item{% else %}items{% endif %}
-                </span>
+                <span id="wish-count-label">{{ ngettext('item', 'items', wishes|length) }}</span>
             </span>
         </p>
 
@@ -279,29 +343,29 @@
                 <div class="wish-icon" aria-hidden="true">📦</div>
 
                 <div>
-                    <span class="priority">Priority {{ wish["priority"] }}</span>
+                            <span class="priority">{{ _('Priority %(priority)s', priority=wish["priority"]) }}</span>
                     <h2 class="wish-name">{{ wish["name"] }}</h2>
 
                     {% if wish["url"] %}
                     <a class="item-link" href="{{ wish['url'] }}" target="_blank" rel="noopener noreferrer">
-                        View item
+                                    {{ _('View item') }}
                     </a>
                     {% endif %}
                 </div>
 
                 <div class="price">
-                    €{{ "%.2f"|format(wish["price_cents"] / 100) }}
-                    <small>Estimated price</small>
+                            {{ format_currency(wish["price_cents"] / 100, wish["currency"]) }}
+                            <small>{{ _('Estimated price') }}</small>
                 </div>
             </article>
             {% endfor %}
         </section>
 
         <p class="empty-state" id="empty-search" hidden>
-            No matching items.
+                {{ _('No matching items.') }}
         </p>
         {% else %}
-        <p class="empty-state">No wishes yet.</p>
+            <p class="empty-state">{{ _('No wishes yet.') }}</p>
         {% endif %}
     </main>
 
@@ -316,7 +380,7 @@
             const emptySearch = document.getElementById("empty-search");
 
             searchInput.addEventListener("input", () => {
-                const query = searchInput.value.trim().toLocaleLowerCase();
+            const query = searchInput.value.trim().toLocaleLowerCase();
                 let visibleCount = 0;
 
                 cards.forEach((card) => {
@@ -326,7 +390,9 @@
                 });
 
                 count.textContent = visibleCount;
-                countLabel.textContent = visibleCount === 1 ? "item" : "items";
+                const singular = {{ _('item')|tojson }};
+                const plural = {{ _('items')|tojson }};
+                countLabel.textContent = visibleCount === 1 ? singular : plural;
                 emptySearch.hidden = visibleCount !== 0;
             });
         }
