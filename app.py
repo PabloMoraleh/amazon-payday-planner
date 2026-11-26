@@ -278,6 +278,13 @@ def create_app(test_config=None):
             locale = "en"
 
         try:
+            save_push_subscription(
+                g.supabase,
+                g.current_user_id,
+                endpoint,
+                keys["p256dh"],
+                keys["auth"],
+            )
             save_notification_preferences(
                 g.supabase,
                 g.current_user_id,
@@ -285,13 +292,6 @@ def create_app(test_config=None):
                 reminder_day,
                 timezone_name,
                 locale,
-            )
-            save_push_subscription(
-                g.supabase,
-                g.current_user_id,
-                endpoint,
-                keys["p256dh"],
-                keys["auth"],
             )
         except Exception:
             current_app.logger.exception("Could not save browser notification subscription")
