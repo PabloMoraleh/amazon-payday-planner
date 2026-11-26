@@ -27,6 +27,8 @@ from flask_wtf.csrf import CSRFProtect
 from redis import Redis
 from supabase import Client, create_client
 
+from push_endpoints import is_supported_push_endpoint as _is_supported_push_endpoint
+
 from db import (
     add_wish,
     delete_push_subscriptions,
@@ -441,30 +443,6 @@ def create_app(test_config=None):
         return redirect(url_for("wishes"))
 
     return app
-
-
-def _is_supported_push_endpoint(value):
-    try:
-        parsed = urlsplit(value)
-        hostname = (parsed.hostname or "").lower().rstrip(".")
-        port = parsed.port
-    except (TypeError, ValueError):
-        return False
-    supported_host = (
-        hostname == "fcm.googleapis.com"
-        or hostname == "web.push.apple.com"
-        or hostname == "notify.windows.com"
-        or hostname.endswith(".notify.windows.com")
-        or hostname == "push.services.mozilla.com"
-        or hostname.endswith(".push.services.mozilla.com")
-    )
-    return (
-        parsed.scheme == "https"
-        and parsed.username is None
-        and parsed.password is None
-        and port in {None, 443}
-        and supported_host
-    )
 
 
 def _is_amazon_es_url(value):
