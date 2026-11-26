@@ -1,6 +1,6 @@
 begin;
 
-select plan(55);
+select plan(60);
 
 insert into auth.users (id, email)
 values
@@ -8,10 +8,10 @@ values
     ('22222222-2222-4222-8222-222222222222', 'rls-b@example.com'),
     ('33333333-3333-4333-8333-333333333333', 'rls-c@example.com');
 
-insert into public.wishes (user_id, name, price_cents)
+insert into public.wishes (id, user_id, name, price_cents)
 values
-    ('11111111-1111-4111-8111-111111111111', 'rls-a-wish', 100),
-    ('22222222-2222-4222-8222-222222222222', 'rls-b-wish', 200);
+    (900000001, '11111111-1111-4111-8111-111111111111', 'rls-a-wish', 100),
+    (900000002, '22222222-2222-4222-8222-222222222222', 'rls-b-wish', 200);
 
 insert into public.price_history (wish_id, price_cents)
 select id, 100 from public.wishes where name = 'rls-a-wish';
@@ -114,7 +114,7 @@ select throws_ok(
     'user A cannot create a wish for user B'
 );
 select throws_ok(
-    $$insert into public.price_history (wish_id, price_cents) select id, 300 from public.wishes where name = 'rls-b-wish'$$,
+    $insert into public.price_history (wish_id, price_cents) values (900000002, 300)$,
     '42501',
     null,
     'user A cannot add history to user B wish'
@@ -139,7 +139,7 @@ select throws_ok(
 );
 
 select is((with changed as (update public.wishes set name = 'rls-hacked-wish' where name = 'rls-b-wish' returning 1) select count(*) from changed), 0::bigint, 'user A cannot update user B wishes');
-select is((with changed as (update public.price_history set price_cents = 999 where wish_id = (select id from public.wishes where name = 'rls-b-wish') returning 1) select count(*) from changed), 0::bigint, 'user A cannot update user B price history');
+select is((with changed as (update public.price_history set price_cents = 999 where wish_id = 900000002 returning 1) select count(*) from changed), 0::bigint, 'user A cannot update user B price history');
 select is((with changed as (update public.budgets set amount_cents = 999 where user_id = '22222222-2222-4222-8222-222222222222' and month = '2099-01' returning 1) select count(*) from changed), 0::bigint, 'user A cannot update user B budgets');
 select is((with changed as (update public.notification_preferences set enabled = false where user_id = '22222222-2222-4222-8222-222222222222' returning 1) select count(*) from changed), 0::bigint, 'user A cannot update user B notification preferences');
 select is((with changed as (update public.push_subscriptions set auth = 'hacked' where endpoint = 'https://fcm.googleapis.com/rls-test-b' returning 1) select count(*) from changed), 0::bigint, 'user A cannot update user B push subscriptions');
