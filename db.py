@@ -143,13 +143,14 @@ def delete_push_subscriptions(client: Client, user_id):
 
 
 def mark_as_bought(client: Client, wish_id):
+    marked_at = datetime.now(timezone.utc).isoformat()
     response = (
         client.table("wishes")
         .update(
             {
                 "status": "bought",
-                "updated_at": datetime.now(timezone.utc).isoformat(),
-                "bought_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": marked_at,
+                "bought_at": marked_at,
             }
         )
         .eq("id", wish_id)
