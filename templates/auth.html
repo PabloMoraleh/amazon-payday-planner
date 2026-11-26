@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="{{ get_locale().language }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if mode == "signup" %}{{ _('Create account') }}{% else %}{{ _('Sign in') }}{% endif %} | Payday Planner</title>
+    <style>
+        :root { font-family: Arial, Helvetica, sans-serif; color: #0f1111; background: #eaeded; }
+        * { box-sizing: border-box; }
+        body { margin: 0; }
+        header { padding: 18px max(20px, calc((100vw - 960px) / 2)); background: #131921; }
+        .brand { color: #fff; font-size: 20px; font-weight: 700; text-decoration: none; }
+        .brand span { color: #febd69; }
+        main { width: min(420px, calc(100% - 32px)); margin: 48px auto; }
+        .card { padding: 28px; border: 1px solid #d5d9d9; border-radius: 8px; background: #fff; }
+        h1 { margin: 0 0 22px; font-size: 28px; }
+        label { display: block; margin: 16px 0 6px; font-size: 14px; font-weight: 700; }
+        input { width: 100%; min-height: 42px; padding: 8px 10px; border: 1px solid #888c8c; border-radius: 4px; font: inherit; }
+        input:focus { outline: 3px solid #c8f3fa; border-color: #007185; }
+        button { width: 100%; min-height: 42px; margin-top: 22px; border: 1px solid #f0a847; border-radius: 6px; background: #ffd814; color: #0f1111; font: inherit; font-weight: 700; cursor: pointer; }
+        button:hover { background: #f7ca00; }
+        .switch { margin: 18px 0 0; font-size: 14px; }
+        a { color: #007185; }
+        .message { margin: 0 0 14px; padding: 10px 12px; border-radius: 4px; font-size: 14px; }
+        .message.error { border: 1px solid #c40000; background: #fff5f5; color: #8a0000; }
+        .message.success { border: 1px solid #198754; background: #f0fff4; color: #14532d; }
+        .fine-print { margin: 18px 0 0; color: #565959; font-size: 12px; line-height: 1.5; }
+        .language-form { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+        .language-form select { padding: 6px; border: 1px solid #888c8c; border-radius: 4px; background: #fff; }
+    </style>
+</head>
+<body>
+    <header><a class="brand" href="/">Payday <span>Planner</span></a></header>
+    <main>
+        <form class="language-form" method="post" action="{{ url_for('set_language') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <label for="locale">{{ _('Language') }}</label>
+            <select id="locale" name="locale" onchange="this.form.submit()">
+                {% for code, label in [('en', 'English'), ('es', 'Español'), ('fr', 'Français'), ('de', 'Deutsch')] %}
+                    <option value="{{ code }}" {% if get_locale().language == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <section class="card">
+            <h1>{% if mode == "signup" %}{{ _('Create account') }}{% else %}{{ _('Sign in') }}{% endif %}</h1>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <p class="message {{ category }}" role="status">{{ message }}</p>
+                {% endfor %}
+            {% endwith %}
+            <form method="post" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label for="email">{{ _('Email') }}</label>
+                <input id="email" name="email" type="email" autocomplete="email" required value="{{ request.form.get('email', '') }}">
+                <label for="password">{{ _('Password') }}</label>
+                <input id="password" name="password" type="password" autocomplete="{% if mode == 'signup' %}new-password{% else %}current-password{% endif %}" minlength="8" required>
+                {% if mode == "signup" %}
+                    <label for="password_confirmation">{{ _('Confirm password') }}</label>
+                    <input id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" minlength="8" required>
+                {% endif %}
+                <button type="submit">{% if mode == "signup" %}{{ _('Create account') }}{% else %}{{ _('Continue') }}{% endif %}</button>
+            </form>
+            <p class="switch">
+                {% if mode == "signup" %}{{ _('Already have an account?') }} <a href="{{ url_for('login') }}">{{ _('Sign in') }}</a>
+                {% else %}{{ _('New to Payday Planner?') }} <a href="{{ url_for('signup') }}">{{ _('Create an account') }}</a>{% endif %}
+            </p>
+            {% if mode == "signup" %}<p class="fine-print">{{ _('Your password is handled by Supabase Auth. Payday Planner does not store it.') }}</p>{% endif %}
+        </section>
+    </main>
+</body>
+</html>

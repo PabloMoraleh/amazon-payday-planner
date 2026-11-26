@@ -5,6 +5,8 @@ __pycache__/
 
 # Secrets and local data
 .env
+.env.*
+!.env.example
 *.db
 instance/
 
