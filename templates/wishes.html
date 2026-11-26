@@ -693,10 +693,12 @@
             disableReminders.addEventListener("click", async () => {
                 try {
                     await sendNotificationRequest("/notifications/unsubscribe", {});
-                    const registration = await navigator.serviceWorker.getRegistration("/static/service-worker.js");
-                    const subscription = registration ? await registration.pushManager.getSubscription() : null;
-                    if (subscription) {
-                        await subscription.unsubscribe();
+                    if ("serviceWorker" in navigator) {
+                        const registration = await navigator.serviceWorker.getRegistration("/static/service-worker.js");
+                        const subscription = registration ? await registration.pushManager.getSubscription() : null;
+                        if (subscription) {
+                            await subscription.unsubscribe();
+                        }
                     }
                     disableReminders.hidden = true;
                     enableReminders.hidden = false;
