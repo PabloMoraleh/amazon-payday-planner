@@ -1,6 +1,6 @@
 begin;
 
-select plan(60);
+select plan(55);
 
 insert into auth.users (id, email)
 values
@@ -145,7 +145,7 @@ select is((with changed as (update public.notification_preferences set enabled =
 select is((with changed as (update public.push_subscriptions set auth = 'hacked' where endpoint = 'https://fcm.googleapis.com/rls-test-b' returning 1) select count(*) from changed), 0::bigint, 'user A cannot update user B push subscriptions');
 
 select is((with changed as (delete from public.wishes where name = 'rls-b-wish' returning 1) select count(*) from changed), 0::bigint, 'user A cannot delete user B wishes');
-select is((with changed as (delete from public.price_history where wish_id = (select id from public.wishes where name = 'rls-b-wish') returning 1) select count(*) from changed), 0::bigint, 'user A cannot delete user B price history');
+select is((with changed as (delete from public.price_history where wish_id = 900000002 returning 1) select count(*) from changed), 0::bigint, 'user A cannot delete user B price history');
 select is((with changed as (delete from public.budgets where user_id = '22222222-2222-4222-8222-222222222222' and month = '2099-01' returning 1) select count(*) from changed), 0::bigint, 'user A cannot delete user B budgets');
 select is((with changed as (delete from public.notification_preferences where user_id = '22222222-2222-4222-8222-222222222222' returning 1) select count(*) from changed), 0::bigint, 'user A cannot delete user B notification preferences');
 select is((with changed as (delete from public.push_subscriptions where endpoint = 'https://fcm.googleapis.com/rls-test-b' returning 1) select count(*) from changed), 0::bigint, 'user A cannot delete user B push subscriptions');
