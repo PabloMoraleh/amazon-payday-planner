@@ -94,7 +94,9 @@ def main():
                 user_sent = True
                 sent_count += 1
             except WebPushException as error:
-                status_code = getattr(getattr(error, "response", None), "status_code", None)
+                status_code = getattr(error, "status_code", None)
+                if status_code is None:
+                    status_code = getattr(getattr(error, "response", None), "status_code", None)
                 if status_code in {404, 410}:
                     client.table("push_subscriptions").delete().eq(
                         "endpoint", subscription["endpoint"]
