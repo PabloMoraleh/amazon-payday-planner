@@ -114,7 +114,7 @@ select throws_ok(
     'user A cannot create a wish for user B'
 );
 select throws_ok(
-    $insert into public.price_history (wish_id, price_cents) values (900000002, 300)$,
+    $$insert into public.price_history (wish_id, price_cents) values (900000002, 300)$$,
     '42501',
     null,
     'user A cannot add history to user B wish'
